@@ -34,11 +34,11 @@
     background: var(--night);
   }
 
-  /* 逻辑分辨率 1664x936（原图尺寸）；JS cover 缩放 + 居中 */
+  /* 逻辑分辨率 1664x936（原图尺寸）；CSS 定死居中，JS 只算缩放 */
   #stage {
     position: absolute;
-    left: 0;
-    top: 0;
+    left: 50%;
+    top: 50%;
     width: 1664px;
     height: 936px;
     transform-origin: center center;
@@ -392,34 +392,35 @@
   const lyricLine = document.getElementById("lyric-line");
 
   // —— 适配：竖屏整体旋转 90° 全景铺满（同蕾塞页），横屏 cover 铺满 ——
+  // 居中交给 CSS（left/top 50% + translate(-50%,-50%)），不依赖 JS 量窗口；
+  // 尺寸取 window 与 visualViewport 的较大值，宁可略大也不留黑边。
   function fitStage() {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+    const vvp = window.visualViewport;
+    const vw = Math.max(window.innerWidth, vvp ? vvp.width : 0);
+    const vh = Math.max(window.innerHeight, vvp ? vvp.height : 0);
     const portrait = vh > vw;
-    const bleed = 1.03; // 轻微放大，消掉亚像素黑边
-    const cx = W / 2;
-    const cy = H / 2;
-    stage.style.left = "0px";
-    stage.style.top = "0px";
-    stage.style.transformOrigin = "center center";
+    const bleed = 1.03;
 
     if (portrait) {
       // 旋转后包围盒为 H x W = 936 x 1664
       const s = Math.max(vw / H, vh / W) * bleed;
-      const tx = vw / 2 - cx;
-      const ty = vh / 2 - cy;
       stage.style.transform =
-        "translate(" + tx + "px," + ty + "px) rotate(90deg) scale(" + s + ")";
+        "translate(-50%,-50%) rotate(90deg) scale(" + s + ")";
       return;
     }
 
     const s = Math.max(vw / W, vh / H) * bleed;
-    stage.style.transform =
-      "translate(" + (vw / 2 - cx) + "px," + (vh / 2 - cy) + "px) scale(" + s + ")";
+    stage.style.transform = "translate(-50%,-50%) scale(" + s + ")";
   }
   window.addEventListener("resize", fitStage);
   window.addEventListener("orientationchange", fitStage);
   window.addEventListener("load", fitStage);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", fitStage);
+  }
+  // 地址栏收起 / 初始尺寸报错的延时兜底
+  setTimeout(fitStage, 300);
+  setTimeout(fitStage, 1200);
   fitStage();
 
   // —— 视差输入（鼠标 / 触摸） ——

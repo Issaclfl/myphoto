@@ -306,17 +306,21 @@
     color: rgba(244, 239, 230, 0.42);
   }
 
-  /* 窄屏：标题缩小收窄，避免和右下按钮打架 */
+  /* 窄屏（竖屏旋转后舞台缩放约 0.52x）：舞台内 UI 放大补偿 */
   @media (max-width: 600px) {
-    .badge { top: 18px; left: 20px; font-size: 10px; padding: 5px 10px; }
-    .title-block { left: 24px; bottom: 42px; max-width: 52vw; }
-    .title-block .song { font-size: 24px; }
-    .title-block .meta { font-size: 11px; margin-top: 6px; }
-    .title-block .line { font-size: 13px; margin-top: 12px; }
-    .controls { right: 20px; bottom: 26px; gap: 8px; }
-    .btn { padding: 8px 13px; font-size: 11px; }
-    #gate h1 { font-size: 27px; letter-spacing: 0.18em; }
-    #gate p { font-size: 12px; }
+    .badge { font-size: 15px; padding: 8px 16px; border-width: 2px; }
+    .title-block .song { font-size: 38px; }
+    .title-block .meta { font-size: 17px; }
+    .title-block .line { font-size: 19px; min-height: 3.6em; }
+    .btn { font-size: 17px; padding: 14px 24px; letter-spacing: 0.1em; }
+    .controls { gap: 14px; }
+  }
+
+  /* 竖屏：舞台整体旋转 90°，短边会超出视口，四角 UI 内缩避开裁切 */
+  @media (orientation: portrait) {
+    .badge { top: 110px; left: 34px; }
+    .title-block { bottom: 170px; left: 48px; }
+    .controls { bottom: 150px; right: 60px; }
   }
 </style>
 </head>
@@ -346,18 +350,18 @@
 
       <canvas id="life" width="1664" height="936"></canvas>
       <div class="vignette"></div>
-    </div>
 
-    <div id="ui">
-      <div class="badge">LIVE PORTRAIT</div>
-      <div class="title-block">
-        <div class="song">风起晴野</div>
-        <div class="meta">VALLEY · 动态立绘</div>
+      <div id="ui">
+        <div class="badge">LIVE PORTRAIT</div>
+        <div class="title-block">
+          <div class="song">风起晴野</div>
+          <div class="meta">VALLEY · 动态立绘</div>
           <div class="line" id="lyric-line">他那双好看的蓝瞳里，总有一抹散不去的忧郁。</div>
-      </div>
-      <div class="controls">
-        <button class="btn" id="btn-play" type="button">暂停</button>
-        <button class="btn" id="btn-bird" type="button">飞鸟</button>
+        </div>
+        <div class="controls">
+          <button class="btn" id="btn-play" type="button">暂停</button>
+          <button class="btn" id="btn-bird" type="button">飞鸟</button>
+        </div>
       </div>
     </div>
   </div>
@@ -387,17 +391,29 @@
   const btnBird = document.getElementById("btn-bird");
   const lyricLine = document.getElementById("lyric-line");
 
-  // —— 适配：cover 铺满，锚定画面中心（人物在中偏右，居中裁剪即可框住） ——
+  // —— 适配：竖屏整体旋转 90° 全景铺满（同蕾塞页），横屏 cover 铺满 ——
   function fitStage() {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    const portrait = vh > vw;
     const bleed = 1.03; // 轻微放大，消掉亚像素黑边
     const cx = W / 2;
     const cy = H / 2;
-    const s = Math.max(vw / W, vh / H) * bleed;
     stage.style.left = "0px";
     stage.style.top = "0px";
     stage.style.transformOrigin = "center center";
+
+    if (portrait) {
+      // 旋转后包围盒为 H x W = 936 x 1664
+      const s = Math.max(vw / H, vh / W) * bleed;
+      const tx = vw / 2 - cx;
+      const ty = vh / 2 - cy;
+      stage.style.transform =
+        "translate(" + tx + "px," + ty + "px) rotate(90deg) scale(" + s + ")";
+      return;
+    }
+
+    const s = Math.max(vw / W, vh / H) * bleed;
     stage.style.transform =
       "translate(" + (vw / 2 - cx) + "px," + (vh / 2 - cy) + "px) scale(" + s + ")";
   }
